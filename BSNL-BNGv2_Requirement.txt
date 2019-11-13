@@ -1,0 +1,59 @@
+set routing-instances Sterlite_ContextName instance-type virtual-router
+set routing-instances Sterlite_ContextName access address-assignment pool Sterlite_ri_name_pool family inet network Sterlite_ri_address_pool
+set routing-instances Sterlite_ContextName access address-assignment pool Sterlite_ri_name_pool family inet range r1 low Sterlite_ri_pool_low
+set routing-instances Sterlite_ContextName access address-assignment pool Sterlite_ri_name_pool family inet range r1 high Sterlite_ri_pool_high
+set routing-instances Sterlite_ContextName access address-protection
+set routing-instances Sterlite_ContextName interface Sterlite_EthernetPort_Value.Sterlite_EthernetPort_UnitNo
+set routing-instances Sterlite_ContextName interface lo0.Sterlite_LoopBack
+set routing-instances Sterlite_ContextName routing-options static route 0.0.0.0/0 next-hop Sterlite_Neighbour_Ip_Address
+set routing-instances Sterlite_ContextName routing-options aggregate route Sterlite_ri_address_pool
+set routing-instances Sterlite_ContextName routing-options autonomous-system Sterlite_Bng_As_No
+set routing-instances Sterlite_ContextName protocols bgp group Sterlite_ContextName type external
+set routing-instances Sterlite_ContextName protocols bgp group Sterlite_ContextName import Sterlite_ContextName_import
+set routing-instances Sterlite_ContextName protocols bgp group Sterlite_ContextName export Sterlite_ContextName_export
+set routing-instances Sterlite_ContextName protocols bgp group Sterlite_ContextName peer-as 9829
+set routing-instances Sterlite_ContextName protocols bgp group Sterlite_ContextName neighbor Sterlite_Neighbour_Ip_Address
+
+set interfaces lo0 unit Sterlite_LoopBack description "Sterlite_ContextName RI LOOPBACK"
+set interfaces lo0 unit Sterlite_LoopBack family inet filter input vpn_protect_re
+set interfaces lo0 unit Sterlite_LoopBack family inet address Sterlite_ri_pool_first_ip
+set policy-options policy-statement Sterlite_ContextName_import term END then reject
+set policy-options policy-statement Sterlite_ContextName_export term ROUTE from protocol aggregate static access
+set policy-options policy-statement Sterlite_ContextName_export term ROUTE from route-filter Sterlite_ri_address_pool exact
+
+set policy-options policy-statement Sterlite_ContextName_export term ROUTE  then accept
+set policy-options policy-statement Sterlite_ContextName_export term ROUTE from protocol access
+set policy-options policy-statement Sterlite_ContextName_export term ROUTE then accept
+set policy-options policy-statement Sterlite_ContextName_export term END then reject
+set access domain map Sterlite_ContextName aaa-routing-instance local
+set access domain map Sterlite_ContextName target-routing-instance Sterlite_ContextName
+
+set firewall family inet filter vpn_protect_re term DENY_FIRST_FRAG from first-fragment
+set firewall family inet filter vpn_protect_re term DENY_FIRST_FRAG then discard
+set firewall family inet filter vpn_protect_re term DENY_NEXT_FRAG from is-fragment
+set firewall family inet filter vpn_protect_re term DENY_NEXT_FRAG then discard
+set firewall family inet filter vpn_protect_re term PERMIT_PIM from protocol pim
+set firewall family inet filter vpn_protect_re term PERMIT_PIM then accept
+set firewall family inet filter vpn_protect_re term PERMIT_IGMP from protocol igmp
+set firewall family inet filter vpn_protect_re term PERMIT_IGMP then accept
+set firewall family inet filter vpn_protect_re term PERMIT_TCP_ESTABLISHED from protocol tcp
+set firewall family inet filter vpn_protect_re term PERMIT_TCP_ESTABLISHED from tcp-established
+set firewall family inet filter vpn_protect_re term PERMIT_TCP_ESTABLISHED then accept
+set firewall family inet filter vpn_protect_re term PERMIT_BGP from protocol tcp
+set firewall family inet filter vpn_protect_re term PERMIT_BGP from port bgp
+set firewall family inet filter vpn_protect_re term PERMIT_BGP then accept
+set firewall family inet filter vpn_protect_re term PERMIT_UDP_TRACEROUTE from protocol udp
+set firewall family inet filter vpn_protect_re term PERMIT_UDP_TRACEROUTE from ttl 1
+set firewall family inet filter vpn_protect_re term PERMIT_UDP_TRACEROUTE from destination-port 33434-33534
+set firewall family inet filter vpn_protect_re term PERMIT_UDP_TRACEROUTE then policer udptrace_policer_5m
+set firewall family inet filter vpn_protect_re term PERMIT_UDP_TRACEROUTE then accept
+set firewall family inet filter vpn_protect_re term PERMIT_ICMP from protocol icmp
+set firewall family inet filter vpn_protect_re term PERMIT_ICMP then policer icmp_policer_10m
+set firewall family inet filter vpn_protect_re term PERMIT_ICMP then accept
+set firewall family inet filter vpn_protect_re term DENY_LOG_OTHERS then count deny-others
+set firewall family inet filter vpn_protect_re term DENY_LOG_OTHERS then log
+set firewall family inet filter vpn_protect_re term DENY_LOG_OTHERS then discard
+
+set interfaces ge-2/0/1 unit 3775 description " *** UPLINK-01  for routing-instance canarabank.com*** "
+set interfaces ge-2/0/1 unit 3775 vlan-id 3775
+set interfaces ge-2/0/1 unit 3775 family inet address 192.168.215.97/30 
